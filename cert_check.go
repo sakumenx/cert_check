@@ -6,6 +6,7 @@ import(
   "bytes"
   "os"
   "time"
+  "strconv"
 )
 
 func main() {
@@ -22,8 +23,19 @@ func main() {
   expireUTCTime := resp.TLS.PeerCertificates[0].NotAfter
   expireJSTTime := expireUTCTime.In(time.FixedZone("Asia/Tokyo", 9 * 60 * 60))
 
+  currentUTCTime := time.Now()
+  currentJSTTime := currentUTCTime.In(time.FixedZone("Asia/Tokyo", 9 * 60 * 60))
+
+  timeSub := expireJSTTime.Sub(currentJSTTime)
+  daysSub := int(timeSub.Hours()) / 24
+  fmt.Println(daysSub)
+
   fmt.Print(expireJSTTime)
-  jsonStr := `{"text":"` + url + `\nSSL証明書期限は` + expireJSTTime.Format("2006/01/02  15:04") + `までです。"}`
+  postText := url + "\nSSL証明書期限は" + expireJSTTime.Format("2006/01/02 15:04") + "までです。"
+  if daysSub < 60 {
+    postText += " `あと残り" + strconv.Itoa(daysSub) + "日`"
+  }
+  jsonStr := "{\"text\":\"" + postText + "\"}"
   fmt.Print(jsonStr)
   req, _ := http.NewRequest(
     "POST",
